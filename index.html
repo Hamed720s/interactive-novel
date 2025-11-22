@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>داستان تعاملی — چپتر 1</title>
+<style>
+:root{
+  --bg:#0e0e0e;--panel:#171717;--muted:#9aa0a6;--accent:#4CAF50;
+  --card:#1f1f1f;--text:#eaeaea;
+}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:Tahoma,system-ui,Segoe UI,Roboto;display:flex;align-items:center;justify-content:center}
+.container{width:95%;max-width:860px;padding:20px;border-radius:12px;background:linear-gradient(180deg,#121212,#151515);box-shadow:0 10px 40px rgba(0,0,0,.6)}
+h1{text-align:center;margin:6px 0 18px;font-size:22px}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px;flex-wrap:wrap}
+.muted{color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.card{background:var(--card);padding:14px;border-radius:10px;text-align:center;cursor:pointer;user-select:none;transition:transform .14s,box-shadow .14s}
+.card:hover{transform:translateY(-6px)}
+.card.locked{background:#272727;color:var(--muted);cursor:not-allowed;transform:none}
+.card.active{background:linear-gradient(90deg,var(--accent),#2fa664);color:#05120a;font-weight:700}
+@media(max-width:860px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:420px){.grid{grid-template-columns:1fr}}
+.story-area{display:none;padding:16px;background:#0f0f0f;border-radius:10px;min-height:360px}
+#chapterLabel{opacity:.85;margin-bottom:8px;font-size:14px}
+#textBox{white-space:pre-wrap;line-height:1.7;font-size:17px;min-height:220px;max-height:56vh;overflow:auto;padding-right:6px}
+.choices{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+.choice{padding:10px;border-radius:10px;background:#2b2b2b;text-align:center;cursor:pointer;transition:transform .12s,opacity .12s}
+.choice:hover{transform:translateY(-4px)}
+.controls{display:flex;gap:10px;justify-content:flex-start;margin-top:14px;flex-wrap:wrap}
+.btn{background:#222;padding:8px 12px;border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,.03)}
+.small{font-size:13px;color:var(--muted)}
+.footer{margin-top:10px;text-align:center;color:var(--muted);font-size:13px}
+.end-badge{display:inline-block;padding:6px 10px;border-radius:8px;background:#1b1b1b;color:var(--muted)}
+</style>
+</head>
+<body>
+  <div class="container" role="application" aria-live="polite">
+    <h1>داستان تعاملی — انتخاب چپتر</h1>
+
+    <!-- منوی انتخاب چپتر -->
+    <div id="selectView">
+      <div class="topbar">
+        <div class="muted">فقط چپتر ۱ فعال است — بقیه «به‌زودی»</div>
+        <div class="muted">نویسندگان: حامد میازاکی و مهرشاد فراستی</div>
+      </div>
+
+      <div class="grid" id="chapGrid">
+        <div class="card active" data-ch="1">چپتر 1</div>
+        <div class="card locked" data-ch="2">چپتر 2<br><small>به‌زودی</small></div>
+        <div class="card locked" data-ch="3">چپتر 3<br><small>به‌زودی</small></div>
+        <div class="card locked" data-ch="4">چپتر 4<br><small>به‌زودی</small></div>
+        <div class="card locked" data-ch="5">چپتر 5<br><small>به‌زودی</small></div>
+        <div class="card locked" data-ch="6">چپتر 6<br><small>به‌زودی</small></div>
+        <div class="card locked" data-ch="7">چپتر 7<br><small>به‌زودی</small></div>
+        <div class="card locked" data-ch="8">چپتر 8<br><small>به‌زودی</small></div>
+      </div>
+
+      <div class="muted">روی «چپتر 1» کلیک کن تا وارد داستانش بشی.</div>
+    </div>
+
+    <!-- نمای داستان -->
+    <div id="storyView" class="story-area" aria-hidden="true">
+      <div id="chapterLabel"></div>
+      <div id="textBox" tabindex="0"></div>
+
+      <div class="choices" id="choices"></div>
+
+      <div class="controls">
+        <div class="btn" id="backBtn">⟵ بازگشت به منو</div>
+        <div class="btn" id="skipBtn">⏩ پرش تایپ</div>
+        <div class="btn" id="saveBtn">💾 ذخیره</div>
+      </div>
+      <div class="footer"><span class="end-badge">پایان قسمت 1</span></div>
+    </div>
+  </div>
+
+<script>
+// ===== story engine for Chapter 1 (based on user's draft) =====
+
+// STORY NODES
+// Keys represent scenes. Choices -> goto another key.
+// We'll use branching according to user's text: initial choice -> two main branches.
+// Some choices change only small dialogue but still included.
+
+const story = {
+  // START
+  "chapter1_start": {
+    chapter:1,
+    text: "بارون شدید واترلَند می‌بارید و پنجاه و دومین نخ سیگار در چهل و هشتمین ساعتی که مرشات نخوابیده بود... میمونش را نوازش می‌کرد و سیگار را روشن می‌کرد. افکارش پریشان بود. چاقو را از روی میز برداشت.",
+    choices: [
+      { label: "اقدام به خودکشی", goto: "suicide_intervene" },
+      { label: "با خشم به سمت در برو", goto: "angry_door" }
+    ]
+  },
+
+  // ----- Branch A: Suicide attempt interrupted (مهربانانه path) -----
+  "suicide_intervene": {
+    chapter:1,
+    text: `دختری با کت مشکی و موهای فر، دست مرشات را گرفت و با عصبانیت گفت: «داری چه غلطی می‌کنی؟ تو یک بزدلی!»\n\nمرشات: «دست از سرم وردار هوله، تو چی می‌فهمی؟!»\n\nهوله: «میخوای خودتو بکشی تا خیال \"اون\" رو درباره ادامه زندگیش راحت کنی؟ کل خانواده و گروهت رو به قتل رسوند و تو داری فرار می‌کنی... خنده‌داره!»\n\nمرشات چاقو را آرام پایین می‌آورد و می‌نشیند.`,
+    choices: [
+      { label: "از کیه اینجا وایسادی؟ (پرسش + دستور جمع کردن افراد)", goto: "order_gather" }
+    ]
+  },
+
+  "order_gather": {
+    chapter:1,
+    text: `هوله: «دو ساعتی میشه.»\n\nمرشات چاقو را در جیبش می‌گذارد و می‌گوید: «برو بچه‌ها رو جمع کن، بگو همشون بیان زیر درخت کهن تا برسم.»\n\nمرشات می‌رود تا اعضای گروه \"ریتاردد\" را آرام کند، در حالی که خودش هیچ آرامشی نداشت. گنگ قبلی به‌خاطر خیانت یک دورف به نام مائده نابود شده بود و تک‌تک اعضای آن گروه کشته شدند؛ همه جز چند نفر... حالا او مانده بود و چند عضو جدید و البته دوتا از زخم‌خورده‌های قدیمی: هوله و عل‌اکبر.`,
+    choices: [
+      { label: "به جلسه برگرد و بنشین", goto: "speech_table" }
+    ]
+  },
+
+  "speech_table": {
+    chapter:1,
+    text: `وقتِ سخنرانی است — سخنرانی برای یک مشت موجود ناامید و خسته، توسط رهبر خسته.\n\nمرشات رفت و سر میز نشست و شروع کرد به صحبت، اما هرکسی داشت با خودش ور می‌رفت و کسی اهمیت نمی‌داد. هوله پاش را محکم روی میز کوبید و نویز قطع شد؛ حالا همه به مرشات نگاه می‌کردند.\n\nمرشات: «یک سال اخیر، بدترین سال زندگی ما بود... به ما خیانت شد و دوستان زیادی را از دست دادیم...»`,
+    choices: [
+      { label: "نرمال رو از جلسه بیرون کن", goto: "kick_normal" },
+      { label: "نگاهش کن و ادامه بده", goto: "look_normal_continue" }
+    ]
+  },
+
+  "kick_normal": {
+    chapter:1,
+    text: `مرشات به نرمال نگاه کرد و گفت: «اگر می‌خوای هی پارازیت بندازی، سکوت کن و بیرون برو؛ و اگر می‌خوای کمک کنی، بشین و خفه شو.»\n\nنرمال عصبی می‌شود و جلسه را ترک می‌کند.`,
+    choices: [
+      { label: "ادامه صحبت‌ها", goto: "continue_speech_after_normal" }
+    ]
+  },
+
+  "look_normal_continue": {
+    chapter:1,
+    text: `مرشات یک لحظه نرمال گابلین را نگاه می‌کند، نفس می‌کشد و ادامه می‌دهد.`,
+    choices: [
+      { label: "ادامه صحبت‌ها", goto: "continue_speech_after_normal" }
+    ]
+  },
+
+  "continue_speech_after_normal": {
+    chapter:1,
+    text: `مرشات: «همونطور که گفتم، خیلی به ما خوش نگذشته... اما باید به این قصه پایان بدیم! تا \"اون\" نره، ما همیشه و همه‌جا نمی‌تونیم با آرامش و امنیت بخوابیم. اونا آرامش رو از ما گرفتن... برادر من در این راه کشته شد.»\n\nنرمال گابلین با لحن کنایه‌ای گفت: «بنظرت تقصیر کی می‌تونه باشه؟»`,
+    choices: [
+      { label: "بهش بگو قصد خودکشی داشتی", goto: "admit_suicide_intent" },
+      { label: "ادامه صحبت‌ها (نشان دادن عزم و رفتن به عملیات)", goto: "speech_call_to_action" }
+    ]
+  },
+
+  "admit_suicide_intent": {
+    chapter:1,
+    text: `مرشات: «می‌خواستم راهِ آسون رو انتخاب کنم، اما تا کاری رو که شروع کردیم تموم نکنیم... هیچ روشی آسون نخواهد بود.»\n\n(گروه به حرف می‌خندد یا فکر می‌کند؛ اما حرف مرشات کمی تاثیر می‌گذارد.)`,
+    choices: [
+      { label: "ادامه: دعوت به عملیات", goto: "speech_call_to_action" }
+    ]
+  },
+
+  "speech_call_to_action": {
+    chapter:1,
+    text: `مرشات: «باید به امپایر حمله کنیم و چاقزیوال رو وسط شهر اعدام کنیم. اون منتظر نخواهد ماند؛ پس قبل از او دست به کار می‌شویم. ما باید آرامش‌مان را پس بگیریم.»\n\nاعضای گنگ بی‌تفاوت از سرِ جایشان برمی‌خیزند و می‌روند؛ مرشات آهی می‌کشد. هوله دستش را روی شانهٔ مرشات می‌گذارد و می‌گوید: «اگه می‌خوای دوباره دل‌شون رو بدست بیاری، نیاز به موفقیت‌های کوچیک داری؛ می‌فهمی؟»\n\nمرشات: «آره... حق با توئه.»\n\nپایان قسمت اول.`,
+    choices: [
+      { label: "بازگشت به منو", goto: "END_PART1" }
+    ]
+  },
+
+  // ----- Branch B: Angry door (انتقامی/خشن path) -----
+  "angry_door": {
+    chapter:1,
+    text: `مرشات با لگد در را باز می‌کند و چاقو را محکم‌تر در دست می‌گیرد که ناگهان عل‌اکبر، مردی با بالا تنهٔ قوی و نیم‌پایین شبیه انسان، جلویش سبز می‌شود: «عطش انتقام رو در تو می‌بینم، ولی اگه تنها بری مثل گنگ قبلی به فنا می‌ری.»\n\nمرشات: «برای اینکه دیگه کسی رو از دست ندم، باید تنها برم. عل‌اکبر، برو کنار.»\n\nعل‌اکبر: «دلت جفتک می‌خواد آیا؟ من میرم گروه رو جمع کنم زیر درخت کهن؛ بیا و نگهش رو شرح بده.»`,
+    choices: [
+      { label: "کصِ مادرت (پاسخ تند و توهین‌آمیز)", goto: "insult_reply" },
+      { label: "اه... خیلی خب (آرام‌تر، قبول هم‌رایی)", goto: "calm_reply" }
+    ]
+  },
+
+  "insult_reply": {
+    chapter:1,
+    text: `مرشات: «کصِ مادرت، گاییدی. باشه؛ برو و جمشون کن تا بیام.»\n\n(عل‌اکبر می‌رود و گروه را خبر می‌کند.)\n\nمرشات بعداً سر میز کنار درخت کهن می‌نشیند و برای تقویت روحیهٔ گروه سخنرانی می‌کند.`,
+    choices: [
+      { label: "جلسه: چاقو را پرت کن و بگو گوش کنه", goto: "throw_knife" },
+      { label: "جلسه: از جلسه اخراجش کن", goto: "expel_normal" }
+    ]
+  },
+
+  "calm_reply": {
+    chapter:1,
+    text: `مرشات کمی نفس می‌کشد، آرام‌تر می‌شود و به عل‌اکبر می‌گوید: «باشه، برو و همه رو جمع کن؛ من هم می‌آیم.»\n\nمرشات سر می‌زی که دور درخت کهن بود می‌نشیند و شروع می‌کند به سخنرانی برای تقویت روحیهٔ گنگ "ریتاردد".`,
+    choices: [
+      { label: "جلسه: چاقو را پرت کن و بگو گوش کنه", goto: "throw_knife" },
+      { label: "جلسه: از جلسه اخراجش کن", goto: "expel_normal" }
+    ]
+  },
+
+  "throw_knife": {
+    chapter:1,
+    text: `مرشات چاقو را پرتاب می‌کند؛ چاقو کمی بالاتر از سر نرمال برخورد می‌کند و همه با تعجب به هم نگاه می‌کنند. مرشات با صدای سرد گفت: «اگر پارازیت نندازی و گوش کن، ببین چی می‌گم... الان اصلاً حالشو ندارم که شوخی کنم.»`,
+    choices: [
+      { label: "ادامه: حمله و طرح عملیات", goto: "violent_plan" }
+    ]
+  },
+
+  "expel_normal": {
+    chapter:1,
+    text: `مرشات با خشم گفت: «اگه مشکلی داری می‌تونی گورتو از اینجا گم کنی و بذاری کارم رو بکنم. کسی به زور دعوتت نکرده اینجا که واق واق کنی.»\n\nنرمال با عصبانیت جلسه را ترک می‌کند؛ عل‌اکبر با نگاه تیزش او را تعقیب می‌کرد.`,
+    choices: [
+      { label: "ادامه: حمله و طرح عملیات", goto: "violent_plan" }
+    ]
+  },
+
+  "violent_plan": {
+    chapter:1,
+    text: `مرشات: «ما باید به امپایر حمله کنیم و اونجا را به آتش بکشیم؛ قبل از اینکه چاقزیوال دست به کار شود. این‌بار ما شکارچی هستیم!»\n\nگروه مثل همیشه سرد و بی‌حوصله از جا بلند می‌شود؛ مرشات می‌داند تا اعتماد را بازپس نگیرد، چیزی عوض نخواهد شد. عل‌اکبر: «یه عملیات کوچیک می‌زنیم، پیروزی می‌گیریم؛ حتی حمله به کارخانه گند هم می‌تونه کافی باشه.»\n\nمرشات: «باشه. آماده باشید.»\n\n(پایان قسمت اول برای شاخهٔ خشن نیز.)`,
+    choices: [
+      { label: "بازگشت به منو", goto: "END_PART1" }
+    ]
+  },
+
+  // END placeholder
+  "END_PART1": {
+    chapter:1,
+    text: `پایان قسمت اول\n\nممنون که تا اینجا همراه شدی.\n\n(این پایان فقط خاتمهٔ چپتر ۱ است — چپترهای بعدی به‌زودی منتشر می‌شوند.)`,
+    choices: [
+      { label: "بازگشت به منو و مشاهده چپترها", goto: "MENU" }
+    ]
+  },
+
+  // MENU placeholder when returning from END_PART1
+  "MENU": {
+    text: "بازگشت به منوی انتخاب چپتر...",
+    choices: []
+  }
+};
+
+// ---------- UI NODES ----------
+const selectView = document.getElementById('selectView');
+const storyView = document.getElementById('storyView');
+const chapterLabel = document.getElementById('chapterLabel');
+const textBox = document.getElementById('textBox');
+const choicesEl = document.getElementById('choices');
+const backBtn = document.getElementById('backBtn');
+const skipBtn = document.getElementById('skipBtn');
+const saveBtn = document.getElementById('saveBtn');
+
+let current = localStorage.getItem('save_scene') || 'chapter1_start';
+let typingInterval = null;
+let isTyping = false;
+let currentFullText = '';
+let currentIndex = 0;
+const TYPING_SPEED = 20; // ms per character
+
+// Attach chapter card handlers
+document.querySelectorAll('.card').forEach(card=>{
+  card.addEventListener('click', ()=>{
+    if (card.classList.contains('locked')) {
+      // small visual feedback
+      card.animate([{transform:'scale(1)'},{transform:'scale(.98)'},{transform:'scale(1)'}],{duration:160});
+      return;
+    }
+    const ch = card.dataset.ch;
+    const sceneKey = `chapter${ch}_start`;
+    openScene(sceneKey);
+  });
+});
+
+// Back to menu
+backBtn.addEventListener('click', ()=> showSelect());
+
+// Skip typing
+skipBtn.addEventListener('click', ()=> {
+  if (isTyping) finishTypingNow();
+});
+
+// Save button
+saveBtn.addEventListener('click', ()=>{
+  localStorage.setItem('save_scene', current);
+  alert('ذخیره شد.');
+});
+
+// Show select view
+function showSelect(){
+  storyView.style.display = 'none';
+  selectView.style.display = 'block';
+  storyView.setAttribute('aria-hidden','true');
+  selectView.setAttribute('aria-hidden','false');
+  // focus for keyboard users
+  document.querySelector('.muted').focus?.();
+}
+
+// Open a scene
+function openScene(key){
+  const scene = story[key] || story['MENU'];
+  current = key;
+  localStorage.setItem('save_scene', current);
+
+  // show UI
+  selectView.style.display = 'none';
+  storyView.style.display = 'block';
+  storyView.setAttribute('aria-hidden','false');
+  selectView.setAttribute('aria-hidden','true');
+
+  chapterLabel.textContent = scene.chapter ? `فصل ${scene.chapter}` : '';
+  renderScene(scene);
+}
+
+// Render scene with typing
+function renderScene(scene){
+  // reset
+  clearInterval(typingInterval);
+  isTyping = true;
+  choicesEl.innerHTML = '';
+  textBox.textContent = '';
+  currentFullText = scene.text || '';
+  currentIndex = 0;
+
+  // start typing
+  typingInterval = setInterval(()=>{
+    if (!isTyping) {
+      // finished externally
+      textBox.textContent = currentFullText;
+      clearInterval(typingInterval);
+      typingInterval = null;
+      isTyping = false;
+      showChoices(scene.choices || []);
+      return;
+    }
+
+    if (currentIndex < currentFullText.length) {
+      textBox.textContent += currentFullText[currentIndex++];
+      // auto-scroll
+      textBox.scrollTop = textBox.scrollHeight;
+    } else {
+      clearInterval(typingInterval);
+      typingInterval = null;
+      isTyping = false;
+      showChoices(scene.choices || []);
+    }
+  }, TYPING_SPEED);
+}
+
+// Finish typing immediately
+function finishTypingNow(){
+  if (!isTyping) return;
+  isTyping = false;
+  if (typingInterval) { clearInterval(typingInterval); typingInterval = null; }
+  textBox.textContent = currentFullText;
+  const scene = story[current] || {};
+  showChoices(scene.choices || []);
+}
+
+// Show choices
+function showChoices(choices){
+  choicesEl.innerHTML = '';
+  if (!choices || choices.length === 0) {
+    // no choices -> show a default back button
+    const btn = document.createElement('div');
+    btn.className = 'choice';
+    btn.textContent = 'بازگشت به منو';
+    btn.addEventListener('click', ()=> showSelect());
+    choicesEl.appendChild(btn);
+    fadeInChoices();
+    return;
+  }
+
+  choices.forEach((c, idx)=>{
+    const btn = document.createElement('div');
+    btn.className = 'choice';
+    btn.textContent = c.label;
+    btn.addEventListener('click', ()=>{
+      // special: goto MENU returns to menu
+      if (c.goto === 'MENU') { showSelect(); return; }
+      openScene(c.goto);
+    });
+    btn.style.opacity = '0';
+    choicesEl.appendChild(btn);
+    // staggered fade-in
+    setTimeout(()=> {
+      btn.style.transition = 'all .16s ease';
+      btn.style.opacity = '1';
+      btn.style.transform = 'translateY(0)';
+    }, 70 * idx);
+  });
+}
+
+// small fade helper (not strictly necessary)
+function fadeInChoices(){
+  const items = choicesEl.querySelectorAll('.choice');
+  items.forEach((el,i)=>{
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(8px)';
+    setTimeout(()=> {
+      el.style.transition = 'all .16s ease';
+      el.style.opacity = '1';
+      el.style.transform = 'translateY(0)';
+    }, 60 * i);
+  });
+}
+
+// init: show menu (do not auto-resume; user chooses)
+(function init(){
+  showSelect();
+})();
+</script>
+</body>
+</html>
